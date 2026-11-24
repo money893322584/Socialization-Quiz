@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>社会化程度综合测评 · 专业版</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<style>
+  :root{
+    --bg1:#0f0c29; --bg2:#302b63; --bg3:#24243e;
+    --card:rgba(255,255,255,.07); --border:rgba(255,255,255,.12);
+    --text:rgba(255,255,255,.9); --muted:rgba(255,255,255,.55);
+    --green:#2dd4a7; --yellow:#ffd166; --pink:#ff6b9d; --blue:#4f8cff;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    background:linear-gradient(165deg,var(--bg1),var(--bg2) 55%,var(--bg3));
+    min-height:100vh;display:flex;justify-content:center;color:#fff;padding:18px;
+    text-align:center}
+  .app{width:100%;max-width:520px;padding-bottom:70px}
+  .card{background:var(--card);backdrop-filter:blur(12px);border-radius:22px;
+    padding:32px 26px;margin-top:5vh;border:1px solid var(--border);animation:fu .4s ease}
+  @keyframes fu{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}
+  .hidden{display:none!important}
+  button.primary{width:100%;padding:15px;border:none;border-radius:14px;
+    background:linear-gradient(90deg,var(--blue),#7c5cff);color:#fff;font-size:17px;
+    font-weight:600;cursor:pointer;margin-top:10px;font-family:inherit}
+  button.primary:disabled{opacity:.4;cursor:not-allowed}
+  button.primary.ghost{background:rgba(255,255,255,.14)}
+  button.primary:active:not(:disabled){transform:scale(.97)}
+  /* 密码输入 */
+  .pwd-input{width:100%;padding:14px;border:1px solid var(--border);border-radius:14px;
+    background:rgba(255,255,255,.08);color:#fff;font-size:22px;text-align:center;
+    letter-spacing:8px;outline:none;margin:6px 0;font-family:inherit}
+  .pwd-input:focus{border-color:var(--blue)}
+  .pwd-err{color:var(--pink);font-size:13px;height:20px;margin-top:4px}
+  /* 报告排版 */
+  .sec{margin-top:32px}
+  .sec-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;justify-content:center}
+  .sec-no{width:30px;height:30px;border-radius:9px;flex:none;display:flex;
+    align-items:center;justify-content:center;font-size:15px;font-weight:700;
+    background:linear-gradient(135deg,var(--blue),#7c5cff)}
+  .sec-head h2{font-size:21px;letter-spacing:.5px;font-weight:700}
+  .sec-head .en{font-size:12px;color:var(--muted);letter-spacing:1px;text-transform:uppercase}
+  .divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin:24px 0}
+  .p{font-size:16.5px;line-height:1.95;color:var(--text);margin-bottom:10px}
+  .small{font-size:13.5px;color:var(--muted);line-height:1.8}
+  .hl{color:var(--yellow);font-weight:600}
+  .box{background:rgba(255,255,255,.05);border-radius:14px;padding:18px;margin:12px 0;
+    border-left:3px solid var(--blue);text-align:left}
+  .box.green{border-color:var(--green)}
+  .box h4{font-size:16px;margin-bottom:8px}
+  .quote{background:rgba(79,140,255,.08);border-radius:12px;padding:14px 16px;
+    font-size:14.5px;color:rgba(255,255,255,.7);line-height:1.9;margin-top:10px;text-align:left}
+  .quote b{color:var(--blue)}
+  /* 封面 */
+  .cover{text-align:center;padding:8px 0}
+  .cover .serial{font-size:11px;color:var(--muted);letter-spacing:2px}
+  .hero-title{font-size:36px;font-weight:800;letter-spacing:8px;margin-top:10px;
+    background:linear-gradient(120deg,var(--green),var(--blue) 60%,#7c5cff);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .cover .score{font-size:80px;font-weight:800;margin:4px 0 0;line-height:1.15;
+    background:linear-gradient(120deg,var(--green),var(--blue) 60%,#7c5cff);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .cover .score-sub{font-size:14.5px;color:var(--muted);margin-top:8px}
+  .level-badge{display:inline-block;margin-top:14px;padding:9px 26px;border-radius:22px;
+    font-size:18px;font-weight:700;letter-spacing:1px}
+  .cover .meta{margin-top:14px;font-size:13px;color:var(--muted);line-height:1.9}
+  /* 百分位条 */
+  .pct-bar{position:relative;height:34px;border-radius:17px;overflow:hidden;
+    background:rgba(255,255,255,.08);margin:12px 0 4px}
+  .pct-fill{height:100%;border-radius:17px;
+    background:linear-gradient(90deg,rgba(45,212,167,.25),rgba(79,140,255,.55))}
+  .pct-marker{position:absolute;top:0;bottom:0;width:2px;background:#fff;box-shadow:0 0 8px #fff}
+  .pct-labels{display:flex;justify-content:space-between;font-size:12px;color:var(--muted)}
+  /* 维度条 */
+  .dim-row{margin:16px 0;text-align:left}
+  .dim-top{display:flex;justify-content:space-between;font-size:16px;margin-bottom:7px}
+  .dim-top b{font-weight:700;font-size:18px}
+  .dim-bar{height:9px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden}
+  .dim-bar>div{height:100%;border-radius:5px}
+  .dim-tag{font-size:12px;padding:3px 10px;border-radius:12px;margin-left:8px;vertical-align:middle}
+  /* 四象限 */
+  .quad{position:relative;height:240px;border-radius:14px;margin:14px 0;
+    background:linear-gradient(to right,transparent 49.5%,var(--border) 49.5%,var(--border) 50.5%,transparent 50.5%),
+               linear-gradient(to bottom,transparent 49.5%,var(--border) 49.5%,var(--border) 50.5%,transparent 50.5%),
+               rgba(255,255,255,.04)}
+  .quad-label{position:absolute;font-size:13px;color:var(--muted);padding:8px 10px;line-height:1.5}
+  .quad-label b{color:var(--text);font-size:14px;display:block;margin-bottom:2px}
+  .dot{position:absolute;width:16px;height:16px;border-radius:50%;background:var(--yellow);
+    box-shadow:0 0 0 6px rgba(255,209,102,.2),0 0 16px rgba(255,209,102,.8);
+    transform:translate(-50%,-50%)}
+  .quad-caption{text-align:center;font-size:15px;color:var(--yellow);margin-top:8px}
+  /* 优势/风险 */
+  .swot{display:grid;grid-template-columns:1fr;gap:10px;margin:12px 0}
+  .swot>div{border-radius:14px;padding:16px;font-size:14.5px;line-height:1.9;text-align:left}
+  .swot h4{font-size:16px;margin-bottom:8px}
+  .swot .s1{background:rgba(45,212,167,.1);border:1px solid rgba(45,212,167,.25)}
+  .swot .s2{background:rgba(255,107,157,.1);border:1px solid rgba(255,107,157,.25)}
+  .swot li{margin-left:18px;margin-bottom:7px}
+  /* 21天计划 */
+  .plan{border-radius:14px;overflow:hidden;margin:12px 0;border:1px solid var(--border)}
+  .plan-row{display:flex;padding:14px;gap:12px;align-items:flex-start;
+    background:rgba(255,255,255,.04);border-bottom:1px solid rgba(255,255,255,.07);text-align:left}
+  .plan-row:last-child{border-bottom:none}
+  .plan-day{flex:none;width:60px;font-size:13px;font-weight:700;color:var(--blue);padding-top:2px;line-height:1.5}
+  .plan-day span{display:block;color:var(--muted);font-weight:400;font-size:12px}
+  .plan-body{font-size:14.5px;line-height:1.8;color:var(--text);flex:1}
+  .plan-body b{color:var(--yellow)}
+  .check{width:22px;height:22px;flex:none;border:1.5px solid rgba(255,255,255,.3);
+    border-radius:7px;margin-top:2px;cursor:pointer;display:flex;align-items:center;
+    justify-content:center;font-size:14px}
+  .check.on{background:var(--green);border-color:var(--green);color:#0f0c29}
+  /* TOC */
+  .toc{display:flex;flex-wrap:wrap;gap:8px;margin:16px 0 4px;justify-content:center}
+  .toc span{font-size:13px;padding:6px 14px;border-radius:14px;
+    background:rgba(255,255,255,.07);color:var(--muted);border:1px solid var(--border)}
+  .chart-box{background:rgba(255,255,255,.05);border-radius:14px;padding:16px;margin:14px 0}
+  .ref{border-top:1px solid var(--border);margin-top:28px;padding-top:16px}
+  .ref p{font-size:12.5px;color:rgba(255,255,255,.45);line-height:2}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- 首页：密码门 -->
+  <div id="home" class="card">
+    <h1 style="font-size:24px">社会化程度综合测评</h1>
+    <p class="p" style="margin-top:12px">基于大五人格、共情量表（IRI）、社会网络量表（Lubben）与自我效能理论编制。18题 · 约5分钟 · 支持进度保存 · 生成深度报告。</p>
+    <div id="resumeBox"></div>
+    <div id="pwdGate">
+      <p class="p" style="margin-top:16px">🔒 请输入测试密码</p>
+      <input class="pwd-input" id="pwd" type="password" inputmode="numeric"
+        maxlength="4" placeholder="••••" autocomplete="off">
+      <p class="pwd-err" id="pwdErr"></p>
+      <button class="primary" onclick="checkPwd()">解锁测评 →</button>
+    </div>
+    <div id="unlocked" class="hidden">
+      <button class="primary" onclick="startTest(false)">开始测评 →</button>
+    </div>
+    <p class="small" style="margin-top:14px">⚠️ 本工具仅供心理科普与自我探索。数据全程本地处理。</p>
+  </div>
+
+  <!-- 答题页 -->
+  <div id="quiz" class="card hidden">
+    <div style="height:5px;background:rgba(255,255,255,.15);border-radius:3px;overflow:hidden;margin:14px 0 20px">
+      <div id="bar" style="height:100%;width:0%;background:linear-gradient(90deg,var(--blue),var(--green));transition:width .3s"></div>
+    </div>
+    <p class="small" id="dimBadge" style="margin-bottom:6px"></p>
+    <p style="font-size:17.5px;font-weight:600;line-height:1.7;margin-bottom:20px" id="question"></p>
+    <div id="options" style="display:flex;gap:6px"></div>
+    <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);padding:0 4px;margin:8px 0 16px">
+      <span>非常不符合</span><span>非常符合</span></div>
+    <button class="primary ghost" onclick="quitSave()">💾 保存进度并退出</button>
+  </div>
+
+  <!-- 报告页 -->
+  <div id="report" class="card hidden"></div>
+</div>
+
+<script>
+/* ============ 密码门 ============ */
+const PWD="8890";
+function checkPwd(){
+  const v=document.getElementById("pwd").value.trim();
+  if(v===PWD){
+    document.getElementById("pwdGate").classList.add("hidden");
+    document.getElementById("unlocked").classList.remove("hidden");
+    document.getElementById("pwdErr").textContent="";
+  }else{
+    document.getElementById("pwdErr").textContent="密码错误，请重新输入";
+    document.getElementById("pwd").value="";
+  }
+}
+document.getElementById("pwd").addEventListener("keydown",e=>{
+  if(e.key==="Enter")checkPwd()});
+
+/* ============ 题库 ============ */
+const BANK={
+  version:2,
+  dimensions:[
+    {key:"E",name:"社交主动性",theory:"大五·外向性",en:"Extraversion"},
+    {key:"C",name:"情绪舒适度",theory:"大五·神经质(反向)",en:"Low Neuroticism"},
+    {key:"P",name:"共情与人际敏感",theory:"IRI 共情量表",en:"Empathy"},
+    {key:"N",name:"社会支持网络",theory:"Lubben 社会网络量表",en:"Network"},
+    {key:"S",name:"社交自我效能",theory:"Bandura 自我效能",en:"Self-efficacy"},
+  ],
+  jumpRules:[{when:{answeredMin:{qids:[2,3,4],value:4}},skip:[10]}],
+  questions:[
+    {id:1,dim:"E",text:"在聚会或集体活动中，我通常主动发起交谈。",reverse:false},
+    {id:2,dim:"E",text:"我喜欢结识新朋友，并主动拓展自己的社交圈。",reverse:false},
+    {id:3,dim:"E",text:"集体活动中，我往往是组织者或气氛带动者之一。",reverse:false},
+    {id:4,dim:"C",text:"在人多的场合我会感到紧张不安。",reverse:true},
+    {id:5,dim:"C",text:"和陌生人一对一交谈时，我担心自己表现不好。",reverse:true},
+    {id:6,dim:"C",text:"被要求当众发言或自我介绍时，我会明显紧张。",reverse:true},
+    {id:7,dim:"C",text:"社交结束后，我常常反复回想自己哪里做得不好。",reverse:true},
+    {id:8,dim:"P",text:"我能敏锐察觉到他人情绪的细微变化。",reverse:false},
+    {id:9,dim:"P",text:"朋友心情低落时，我通常知道该怎么安慰TA。",reverse:false},
+    {id:10,dim:"P",text:"看电影或听故事时，我很容易代入角色的情感。",reverse:false},
+    {id:11,dim:"P",text:"别人向我倾诉时，我有时会觉得不耐烦或不知所措。",reverse:true},
+    {id:12,dim:"N",text:"遇到困难时，我至少有三个可以求助的人。",reverse:false},
+    {id:13,dim:"N",text:"我每月都会与朋友或家人进行线下聚会。",reverse:false},
+    {id:14,dim:"N",text:"我认识不同圈子（工作/兴趣/学习）的朋友。",reverse:false},
+    {id:15,dim:"N",text:"近半年，我很少与朋友保持主动联系。",reverse:true},
+    {id:16,dim:"S",text:"我有信心处理好与他人的矛盾和分歧。",reverse:false},
+    {id:17,dim:"S",text:"在陌生环境中，我能较快融入新的群体。",reverse:false},
+    {id:18,dim:"S",text:"我相信自己在重要场合（面试/汇报）能表达自如。",reverse:false},
+  ],
+  scale:{min:0,max:4,labels:["非常不符合","不符合","不确定","符合","非常符合"]},
+};
+const NORM={mean:50,sd:15};
+const SKEY="stp_v"+BANK.version;
+let state={order:[],idx:0,answers:{}};
+
+function dimScore(dim){let s=0,m=0;
+  BANK.questions.filter(q=>q.dim===dim).forEach(q=>{
+    const r=state.answers[q.id];if(r===undefined)return;
+    s+=q.reverse?4-r:r;m+=4});
+  return m?Math.round(s/m*100):0}
+function pctile(x){const z=(x-NORM.mean)/NORM.sd;
+  return Math.round(100/(1+Math.exp(-1.702*z)))}
+const saveProgress=()=>localStorage.setItem(SKEY,JSON.stringify(state));
+const loadProgress=()=>{try{return JSON.parse(localStorage.getItem(SKEY))}catch(e){return null}};
+function applyJumps(){for(const r of BANK.jumpRules){
+  if(state.order.includes(r.skip[0])&&r.when.answeredMin.qids.every(
+    q=>state.answers[q]>=r.when.answeredMin.value))
+    state.order=state.order.filter(id=>!r.skip.includes(id))}}
+const lv=v=>v>=75?2:v>=50?1:0;
+const TAGS=[{t:"待发展",c:"var(--pink)"},{t:"中等",c:"var(--yellow)"},{t:"优势",c:"var(--green)"}];
+function col(v){return v>=75?"var(--green)":v>=50?"var(--yellow)":"var(--pink)"}
+function colHex(v){return v>=75?"#2dd4a7":v>=50?"#ffd166":"#ff6b9d"}
+
+function show(id){["home","quiz","report"].forEach(x=>
+  document.getElementById(x).classList.toggle("hidden",x!==id))}
+function startTest(resume){
+  const s=resume?loadProgress():null;
+  state=s&&s.idx<s.order.length&&s.order.length?s:{order:BANK.questions.map(q=>q.id),idx:0,answers:{}};
+  if(!resume)state.order=BANK.questions.map(q=>q.id);
+  show("quiz");renderQ()}
+function renderQ(){
+  const q=BANK.questions.find(x=>x.id===state.order[state.idx]);
+  const d=BANK.dimensions.find(d=>d.key===q.dim);
+  document.getElementById("bar").style.width=(state.idx/state.order.length*100)+"%";
+  document.getElementById("dimBadge").textContent=`维度 ${d.name} · 理论来源：${d.theory}`;
+  document.getElementById("question").textContent=`${state.idx+1}/${state.order.length}. ${q.text}`;
+  const box=document.getElementById("options");box.innerHTML="";
+  BANK.scale.labels.forEach((lb,i)=>{
+    const div=document.createElement("div");
+    div.style.cssText="flex:1;text-align:center;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:14px 2px;cursor:pointer;font-size:13.5px;transition:.15s";
+    div.textContent=lb;
+    div.onclick=()=>{state.answers[q.id]=i;applyJumps();state.idx++;saveProgress();
+      state.idx<state.order.length?renderQ():buildReport()};
+    box.appendChild(div)})}
+function quitSave(){saveProgress();show("home");renderResume();alert("✅ 进度已保存")}
+function renderResume(){const s=loadProgress();
+  document.getElementById("resumeBox").innerHTML=
+  s&&s.idx>0&&s.idx<s.order.length?
+  `<button class="primary" style="background:linear-gradient(90deg,var(--green),var(--blue))" onclick="startTest(true)">📌 继续上次测评（${s.idx}/${s.order.length}题）→</button>`:""}
+
+/* ============ 深度报告 ============ */
+function buildReport(){
+  show("report");
+  const scores={},pcts={};
+  BANK.dimensions.forEach(d=>{scores[d.key]=dimScore(d.key);pcts[d.key]=pctile(scores[d.key])});
+  const total=Math.round(BANK.dimensions.reduce((a,d)=>a+scores[d.key],0)/5);
+  const totalPct=pctile(total);
+  const now=new Date();
+
+  const profiles=[
+    {name:"探索成长型",desc:"当前社会化发展处于塑造期，多个维度存在明确的成长空间。这不是缺陷，而是清晰的成长地图——下文行动计划将为你逐周导航。",color:"var(--pink)"},
+    {name:"选择性适应型",desc:"你在社交中保持着精心的能量管理：对值得的关系深度投入，对消耗性场景礼貌疏离。这是一种成熟策略，但需留意被动收缩的倾向。",color:"var(--yellow)"},
+    {name:"高适应型",desc:"你展现出较高的整体社会化水平——主动连接、情绪稳定、支持网络多元。本报告将帮你识别下一步的精进方向。",color:"var(--green)"}];
+  const pf=profiles[lv(total)];
+
+  const qx=(scores.E-50)/45*100, qy=(50-scores.C)/45*100;
+  const quadIdx=scores.E>=50&&scores.C>=50?0:scores.E<50&&scores.C>=50?1:
+    scores.E<50&&scores.C<50?2:3;
+  const quadDefs=[
+    {n:"社交达人型",d:"主动且自在——社交于你是能量来源，注意别透支他人边界",c:"var(--green)"},
+    {n:"深度联结型",d:"不主动但自在——熟人圈中如鱼得水，重质不重量",c:"var(--yellow)"},
+    {n:"能量守恒型",d:"不主动且易紧张——最小化社交消耗，但可能错失弱关系红利",c:"var(--pink)"},
+    {n:"热情焦虑型",d:"主动但紧绷——渴望连接又被焦虑牵制，报告建议部分对你尤其重要",c:"var(--yellow)"}];
+  const quad=quadDefs[quadIdx];
+
+  const insights=[];
+  if(scores.E<50&&scores.S>=60)insights.push(["主动行为低 × 自我效能高","你不是不敢，而是不想。社交能力储备充足，只是缺乏触发场景。建议从「利益驱动型社交」（行业交流、兴趣社群）入手，目的感会降低启动阻力。"]);
+  if(scores.C<50&&scores.P>=60)insights.push(["情绪敏感高 × 共情能力强","你的紧张很大程度来自「过度读取他人信号」。共情是天赋，但需加装过滤器：提醒自己「对方的冷淡大概率与我无关」，可显著降低误读带来的耗能。"]);
+  if(scores.N<50&&scores.E>=60)insights.push(["主动性高 × 支持网络弱","你愿意社交但网络偏浅——可能停留在认识层面，未沉淀为可求助的关系。建议把30%的「新认识」精力转投「旧关系维护」：深度的关键在重复见面。"]);
+  if(scores.S<50&&scores.P>=60)insights.push(["自我效能低 × 共情强","你能读懂他人却怀疑自己，这常见于高敏感人群。你的「读人能力」本身就是社交核心竞争力——请把它从负担重新编码为资产。"]);
+  if(scores.C>=70&&scores.P>=70)insights.push(["情绪稳定 × 共情高","你兼具稳定内核与敏锐感知，是天然的「团队情绪锚点」。可考虑承担导师、调解者类角色，这类身份会进一步强化你的社交资本。"]);
+  if(!insights.length)insights.push(["整体均衡","五维结构没有显著矛盾组合，社交模式已形成自洽系统。精进方向：每季度给自己一个「舒适区边缘挑战」（如公开分享、组织活动）。"]);
+
+  const sorted=[...BANK.dimensions].sort((a,b)=>scores[b.key]-scores[a.key]);
+  const top2=sorted.slice(0,2),low2=sorted.slice(-2).reverse();
+
+  const planBank={
+    E:[["认知启动","每天完成1次「15秒主动」：向任何一位同事/店员/邻居多说一句话。不追求质量，只求数量——行为激活先于动机。"],
+       ["场景嵌入","参加1次有陌生人在场的活动，唯一目标：记住1个新名字。降低目标颗粒度是克服回避的关键。"],
+       ["角色升级","主动发起1次邀约（约饭/约咖啡）。研究显示主动者获得的社交回报是被邀请者的3倍。"]],
+    C:[["生理调节","掌握4-7-8呼吸法（吸4秒-屏7秒-呼8秒），在高焦虑场景前使用。生理平静先于心理平静。"],
+       ["证据日记","社交后写下：我担心的事发生了吗？实际对方的反应是什么？系统性地用事实修正灾难化预期。"],
+       ["分级暴露","主动选择1个中度焦虑场景（如当众简短发言），完成后记录「实际焦虑峰值 vs 预期」。差距会重建你的判断系统。"]],
+    P:[["觉察训练","每天观察1次他人情绪并命名（TA看起来疲惫/兴奋），有条件时验证猜测。情绪粒度提升可直接改善共情精度。"],
+       ["复述确认","对话中练习「你听起来是因为……，对吗？」句式，每周至少3次。被确认的共情才是有效共情。"]],
+    N:[["旧网激活","本周联系1位超过1个月未聊的朋友，从具体回忆切入（「上次你说的那家店我去试了」）。"],
+       ["新网拓展","加入1个固定周期活动的社群（每周运动/读书会）。弱关系的价值在重复中出现。"]],
+    S:[["成功清单","每天记录1件社交小成就，无论多小。Bandura 研究证实：成功经验是自我效能最强的来源。"],
+       ["书面过渡","面对需要表达的冲突场景，先用文字（消息）表达，逐步过渡到口头。效能感在阶梯式成功中累积。"]]};
+  const plan=[];
+  low2.forEach((d,i)=>{planBank[d.key].forEach((p,j)=>{
+    plan.push({week:i===0&&j===0?"第1周":i===0&&j===1?"第2周":
+      i===0&&j===2?"第3周":i===1&&j===0?"第2周起":i===1&&j===1?"第3周起":"持续",
+      dim:d.name,goal:p[0],detail:p[1]})})});
+
+  document.getElementById("report").innerHTML=`
+  <div class="cover">
+    <p class="serial">SOCIALIZATION ASSESSMENT REPORT</p>
+    <p class="hero-title">社 会 化</p>
+    <div class="score">${total}</div>
+    <p class="score-sub">综合指数 · 超过 <b style="color:var(--yellow)">${totalPct}%</b> 的普通成年人群（基于模拟常模）</p>
+    <div class="level-badge" style="background:${pf.color}22;color:${pf.color};border:1px solid ${pf.color}55">${pf.name}</div>
+    <p class="meta">报告编号 SZ-${now.getTime().toString().slice(-8)} · 生成于 ${now.toLocaleString("zh-CN")}</p>
+  </div>
+  <div class="divider"></div>
+  <p class="p">${pf.desc}</p>
+  <div class="toc"><span>① 常模定位</span><span>② 五维画像</span><span>③ 风格象限</span>
+    <span>④ 交叉洞察</span><span>⑤ 优势风险</span><span>⑥ 21天计划</span></div>
+
+  <div class="sec"><div class="sec-head"><span class="sec-no">①</span>
+    <div><h2>常模定位</h2><p class="en">Percentile Position</p></div></div>
+    <p class="p">第 <span class="hl">${totalPct}</span> 百分位意味着：假设100个人与你同场，你的综合社会化水平大约排在第 <span class="hl">${100-totalPct+1}</span> 位。</p>
+    <div class="pct-bar"><div class="pct-fill" style="width:${totalPct}%"></div>
+      <div class="pct-marker" style="left:${totalPct}%"></div></div>
+    <div class="pct-labels"><span>0（人群最低）</span><span>50（中位）</span><span>100（人群最高）</span></div>
+    <div class="quote">💡 <b>解读提示</b>：社会化程度无绝对好坏——低百分位者往往拥有更强的独处能力与深度思考优势，高百分位者则需警惕社交透支。关键是「你的水平是否匹配你想要的生活」。</div>
+  </div>
+
+  <div class="sec"><div class="sec-head"><span class="sec-no">②</span>
+    <div><h2>五维画像</h2><p class="en">Five-Dimension Profile</p></div></div>
+    <div class="chart-box"><canvas id="radarC" height="240"></canvas></div>
+    ${BANK.dimensions.map(d=>{
+      const t=TAGS[lv(scores[d.key])],p=pcts[d.key];
+      const texts=[
+        `当前处于待发展区间。该维度可塑性很强，配合第⑥部分针对性练习，通常4-8周可观察到可感知的变化。`,
+        `处于人群中位水平。已能支撑日常社交运转，属于「可选精进区」而非「必需改善区」。`,
+        `该维度是你的显著优势（超过约${p}%的人群），请在第⑤部分查看如何将其转化为杠杆。`];
+      return `<div class="dim-row">
+      <div class="dim-top"><span><b>${d.name}</b><span class="dim-tag" style="background:${col(scores[d.key])}22;color:${col(scores[d.key])}">${t.t} · P${p}</span></span>
+      <b style="color:${col(scores[d.key])}">${scores[d.key]}</b></div>
+      <div class="dim-bar"><div style="width:${scores[d.key]}%;background:linear-gradient(90deg,${col(scores[d.key])}55,${col(scores[d.key])})"></div></div>
+      <p class="small" style="margin-top:6px">${texts[lv(scores[d.key])]}</p></div>`}).join("")}
+  </div>
+
+  <div class="sec"><div class="sec-head"><span class="sec-no">③</span>
+    <div><h2>社交风格定位</h2><p class="en">Style Quadrant</p></div></div>
+    <p class="p">将「社交主动性」与「情绪舒适度」交叉，得到四种典型风格。你的落点：</p>
+    <div class="quad">
+      <div class="quad-label" style="top:8px;left:10px"><b>社交达人型</b>主动 × 自在</div>
+      <div class="quad-label" style="top:8px;right:10px;text-align:right"><b>深度联结型</b>被动 × 自在</div>
+      <div class="quad-label" style="bottom:8px;left:10px"><b>热情焦虑型</b>主动 × 紧绷</div>
+      <div class="quad-label" style="bottom:8px;right:10px;text-align:right"><b>能量守恒型</b>被动 × 紧绷</div>
+      <div class="dot" style="left:${50+qx/2}%;top:${50-qy/2}%"></div>
+    </div>
+    <p class="quad-caption">你是「${quad.n}」—— ${quad.d}</p>
+  </div>
+
+  <div class="sec"><div class="sec-head"><span class="sec-no">④</span>
+    <div><h2>维度交叉洞察</h2><p class="en">Interaction Insights</p></div></div>
+    ${insights.map(([t,c])=>`
+      <div class="box"><h4 style="color:var(--blue)">🔗 ${t}</h4>
+      <p class="p" style="font-size:15px;margin-bottom:0">${c}</p></div>`).join("")}
+  </div>
+
+  <div class="sec"><div class="sec-head"><span class="sec-no">⑤</span>
+    <div><h2>优势资产 与 风险提示</h2><p class="en">Strengths & Watchouts</p></div></div>
+    <div class="swot">
+      <div class="s1"><h4 style="color:var(--green)">✦ 你的资产</h4>
+        <ul>${top2.map(d=>`<li><b>${d.name}</b>（${scores[d.key]}分）——可作为撬动其他维度的支点</li>`).join("")}
+        <li>「${quad.n}」的行为惯性本身就是资源</li></ul></div>
+      <div class="s2"><h4 style="color:var(--pink)">✦ 需要留意的</h4>
+        <ul>${low2.map(d=>`<li><b>${d.name}</b>（${scores[d.key]}分）——长期偏低与孤独感、职业机会损失相关</li>`).join("")}
+        <li>若不干预，回避行为有自我强化的倾向</li></ul></div>
+    </div>
+    <div class="box green"><h4>🧰 杠杆策略：用优势带动短板</h4>
+    <p class="p" style="font-size:15px;margin-bottom:0">${ 
+      top2[0].key==="P"?"你共情能力强——把它用作破冰工具：主动用「你看起来今天状态很好」开启对话，优势会替你完成最难的启动环节。"
+      :top2[0].key==="S"?"你自我效能感好——选择1个略高于当前能力的目标（如组织1次小型聚会），效能感会推动你在主动性上突破。"
+      :top2[0].key==="N"?"你支持网络健全——请网络中的活跃成员带你进入新圈子，「熟人引荐」是拓展网络成功率最高的方式。"
+      :top2[0].key==="C"?"你情绪稳定性高——适合承担团队中「定海神针」角色，这类身份暴露本身就会拉动主动性。"
+      :"你的主动性是最大杠杆——先广撒网建立接触，再借助它筛选出值得深化的关系。"}</p></div>
+  </div>
+
+  <div class="sec"><div class="sec-head"><span class="sec-no">⑥</span>
+    <div><h2>21天渐进行动计划</h2><p class="en">Action Plan · 打勾记录</p></div></div>
+    <p class="p">针对你的<span class="hl">两个优先改善维度</span>设计，遵循行为科学三原则：<b>颗粒度足够小</b>、<b>有明确验证标准</b>、<b>渐进暴露</b>。</p>
+    <div class="plan">${plan.map(p=>`
+      <div class="plan-row">
+        <div class="check" onclick="this.classList.toggle('on')"></div>
+        <div class="plan-day">${p.week}<span>${p.dim}</span></div>
+        <div class="plan-body"><b>${p.goal}</b><br>${p.detail}</div>
+      </div>`).join("")}</div>
+    <div class="quote">📅 <b>复测建议</b>：第21天复测。行为改变遵循「先行动、后感知」规律——第2-3周主观感受往往尚未变化，但量表分数通常已有可测量的移动，这正是坚持的证据。</div>
+  </div>
+
+  <div class="sec"><div class="sec-head"><span class="sec-no">⑦</span>
+    <div><h2>理论依据</h2><p class="en">References</p></div></div>
+    <div class="ref">
+      <p>① 社交主动性 / 情绪舒适度：Costa & McCrae (1992) NEO-PI-R 五因素人格模型<br>
+      ② 共情与人际敏感：Davis (1983) 人际反应指针量表 IRI<br>
+      ③ 社会支持网络：Lubben (1988) 社会网络量表<br>
+      ④ 社交自我效能：Bandura (1997) Self-efficacy: The Exercise of Control<br>
+      ⑤ 行动计划设计：行为激活（BA）与分级暴露原理（CBT 框架）</p>
+    </div>
+    <p class="small" style="margin-top:18px">仅供参考，不用于临床诊断或人才选拔。</p>
+  </div>
+
+  <button class="primary" onclick="saveImage(this)">📷 保存报告图片</button>
+  <button class="primary ghost" onclick="retake()">🔄 重新测评</button>`;
+
+  /* 雷达图 */
+  new Chart(document.getElementById("radarC"),{type:"radar",
+    data:{labels:BANK.dimensions.map(d=>d.name),
+      datasets:[
+        {data:BANK.dimensions.map(()=>50),fill:false,
+         borderColor:"rgba(255,255,255,.25)",borderDash:[5,4],pointRadius:0},
+        {data:BANK.dimensions.map(d=>scores[d.key]),fill:true,
+         backgroundColor:"rgba(79,140,255,.22)",borderColor:"#4f8cff",
+         pointBackgroundColor:BANK.dimensions.map(d=>colHex(scores[d.key])),pointRadius:4}]},
+    options:{animation:false,plugins:{legend:{display:false}},
+      scales:{r:{min:0,max:100,stepSize:25,ticks:{color:"rgba(255,255,255,.5)"},
+        grid:{color:"rgba(255,255,255,.1)"},angleLines:{color:"rgba(255,255,255,.1)"},
+        pointLabels:{color:"#fff",font:{size:13}}}}}});
+  localStorage.removeItem(SKEY);
+}
+
+/* 重新测评：直接返回答题页重新作答 */
+function retake(){
+  state={order:BANK.questions.map(q=>q.id),idx:0,answers:{}};
+  localStorage.removeItem(SKEY);
+  show("quiz");renderQ();
+}
+
+/* 保存报告为图片 */
+async function saveImage(btn){
+  btn.disabled=true;btn.textContent="正在生成图片…";
+  try{
+    const canvas=await html2canvas(document.getElementById("report"),{
+      backgroundColor:"#24243e",scale:2,useCORS:true});
+    const link=document.createElement("a");
+    link.download=`社会化测评报告_${new Date().toLocaleDateString("zh-CN").replace(/\//g,"")}.png`;
+    link.href=canvas.toDataURL("image/png");
+    link.click();
+    btn.textContent="✅ 已保存，请查收下载图片";
+  }catch(e){
+    alert("生成失败，请重试");btn.textContent="📷 保存报告图片";
+  }
+  setTimeout(()=>{btn.disabled=false;btn.textContent="📷 保存报告图片"},2500);
+}
+renderResume();
+</script>
+</body>
+</html>
